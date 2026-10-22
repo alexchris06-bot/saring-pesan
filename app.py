@@ -228,10 +228,13 @@ def normalisasi_leetspeak(teks):
 def bersihkan_teks(teks):
   teks_awal = str(teks).lower()
 
-  # 1. Hapus tanda petik pemecah kata (misal g'acor -> gacor, w3'de -> w3de)
+  # 1. Deteksi Kode Dial USSD Operator (contoh: *500*55#, *363#, *123#)
+  ada_kode_ussd = bool(re.search(r'\*\d+[\*\d+]*#', teks_awal))
+
+  # 2. Hapus tanda petik pemecah kata
   teks_tanpa_petik = re.sub(r"['`\"\-]", '', teks_awal)
 
-  # 2. Deteksi file APK & URL
+  # 3. Deteksi file APK & URL Domain Resmi
   ada_apk = bool(re.search(r'\b\S+\.apk\b', teks_tanpa_petik))
   urls = re.findall(
       r'https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*',
@@ -241,20 +244,20 @@ def bersihkan_teks(teks):
       any(domain in url for domain in DOMAIN_RESMI) for url in urls
   )
 
-  # 3. Normalisasi Leetspeak
+  # 4. Normalisasi Leetspeak
   teks_norm = normalisasi_leetspeak(teks_tanpa_petik)
 
-  # 4. Pembersihan karakter khusus
+  # 5. Pembersihan karakter khusus
   teks_bersih = re.sub(r'[^a-zA-Z\s]', ' ', teks_norm)
   teks_bersih = re.sub(r'\s+', ' ', teks_bersih).strip()
 
-  # 5. Cek kata kunci spam/judi
+  # 6. Cek kata kunci spam/judi
   kata_list = teks_bersih.split()
   ada_kata_spam = any(
       kw in kata_list or kw in teks_bersih for kw in KATA_KUNCI_SPAM
   )
 
-  return teks_bersih, ada_apk, ada_link_resmi, ada_kata_spam
+  return teks_bersih, ada_apk, ada_link_resmi, ada_kode_ussd, ada_kata_spam
 
 
 # ==========================================
@@ -294,11 +297,15 @@ if st.button('MULAI PEMINDAIAN'):
   if not pesan_input.strip():
     st.warning('⚠️ INPUT EMPTY! Masukkan pesan terlebih dahulu.')
   else:
-    pesan_bersih, punya_apk, punya_link_resmi, punya_kata_spam = bersihkan_teks(
-        pesan_input
-    )
+    (
+        pesan_bersih,
+        punya_apk,
+        punya_link_resmi,
+        punya_kode_ussd,
+        punya_kata_spam,
+    ) = bersihkan_teks(pesan_input)
 
-    # Layer 1: Rule-Based (APK, Kata Kunci Judi/Spam, & Domain Resmi)
+    # Layer 1: Rule-Based (Indikator Bahaya vs Indikator Resmi)
     if punya_apk or punya_kata_spam:
       prediksi = 'penipuan'
       prob_penipuan = 99.99
@@ -306,13 +313,15 @@ if st.button('MULAI PEMINDAIAN'):
       alasan_rule = (
           'Terdeteksi file APK berbahaya'
           if punya_apk
-          else 'Terdeteksi pola kata kunci indikasi judi/spam'
+          else 'Terdeteksi pola kata kunci judi/spam'
       )
-    elif punya_link_resmi:
+    elif punya_link_resmi or punya_kode_ussd:
       prediksi = 'aman'
       prob_aman = 99.85
       prob_penipuan = 0.15
-      alasan_rule = 'Terdeteksi tautan domain resmi terverifikasi'
+      alasan_rule = (
+          'Terdeteksi kode dial USSD (*...#) atau domain resmi terverifikasi'
+      )
     # Layer 2: Machine Learning Model
     else:
       alasan_rule = 'Klasifikasi Murni Machine Learning (Naive Bayes)'
