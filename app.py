@@ -3,14 +3,14 @@ import re
 import streamlit as st
 
 
-# Helper function untuk merender HTML tanpa terdeteksi sebagai code block
+# Helper function untuk merender HTML
 def render_html(html_str):
   clean_html = re.sub(r'\s+', ' ', html_str).strip()
   st.markdown(clean_html, unsafe_allow_html=True)
 
 
 # ==========================================
-# 1. Konfigurasi Halaman & CSS HOT PINK & PURPLE
+# 1. Konfigurasi Halaman & CSS RETRO SYNTHWAVE
 # ==========================================
 st.set_page_config(
     page_title='SARINGPESAN // GX-CYBER', page_icon='👾', layout='centered'
@@ -19,20 +19,13 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Import Font Retro Pixel Game */
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
 
-    /* ANIMASI BACKGROUND PIXEL BERGERAK */
     @keyframes moveStarfield {
-        0% {
-            background-position: 0 0, 0 0, 0 0, 0 0;
-        }
-        100% {
-            background-position: 400px 400px, -300px 600px, 200px -400px, 0 100%;
-        }
+        0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+        100% { background-position: 400px 400px, -300px 600px, 200px -400px, 0 100%; }
     }
 
-    /* BACKGROUND DARK PURPLE NIGHT SKY */
     .stApp {
         background-color: #0d0714 !important;
         background-image: 
@@ -47,7 +40,6 @@ st.markdown(
         color: #d8b4fe;
     }
 
-    /* MEMBUAT TAMPILAN PRESISI DI TENGAH LAYAR (CENTERED) */
     .main {
         display: flex !important;
         align-items: center !important;
@@ -55,7 +47,6 @@ st.markdown(
         min-height: 100vh !important;
     }
 
-    /* CONTAINER UTAMA: RETRO PIXEL HUD (DEEP PLUM PURPLE) */
     .block-container {
         max-width: 720px !important;
         padding: 2rem !important;
@@ -63,14 +54,11 @@ st.markdown(
         background: #1a0f2b !important;
         border: 3px solid #ff007f !important;
         border-radius: 0px !important;
-        box-shadow: 
-            6px 6px 0px #7b2cbf,
-            -2px -2px 0px #06030a !important;
+        box-shadow: 6px 6px 0px #7b2cbf, -2px -2px 0px #06030a !important;
         position: relative !important;
         z-index: 10 !important;
     }
 
-    /* JUDUL PIXEL ARCADE (HOT PINK + PURPLE SHADOW) */
     h1 {
         color: #ff007f !important;
         font-family: 'Press Start 2P', cursive !important;
@@ -91,10 +79,7 @@ st.markdown(
         letter-spacing: 1px;
     }
 
-    /* FONT LABEL TEXTAREA (INPUT PESAN MENCURIGAKAN) */
-    .stTextArea label, 
-    .stTextArea label p, 
-    div[data-testid="stWidgetLabel"] p {
+    .stTextArea label, .stTextArea label p, div[data-testid="stWidgetLabel"] p {
         font-family: 'Press Start 2P', cursive !important;
         color: #ff007f !important;
         font-size: 0.7rem !important;
@@ -102,7 +87,6 @@ st.markdown(
         line-height: 1.5 !important;
     }
 
-    /* INPUT TEXTAREA PIXEL STYLE */
     .stTextArea textarea {
         background-color: #0a0512 !important;
         color: #e0aaff !important;
@@ -117,7 +101,6 @@ st.markdown(
         box-shadow: inset 3px 3px 0px rgba(0, 0, 0, 0.8), 0 0 8px rgba(255, 0, 127, 0.5) !important;
     }
 
-    /* TOMBOL SCAN ARCADE BUTTON & FONT DALAM TOMBOL */
     .stButton > button {
         width: 100% !important;
         background: #ff007f !important;
@@ -130,31 +113,20 @@ st.markdown(
         transition: all 0.1s ease !important;
     }
 
-    /* TULISAN DI DALAM TOMBOL */
-    .stButton > button, 
-    .stButton > button p, 
-    .stButton > button span, 
-    .stButton > button div {
+    .stButton > button, .stButton > button p, .stButton > button span, .stButton > button div {
         font-family: 'Press Start 2P', cursive !important;
         font-size: 0.8rem !important;
         text-transform: uppercase !important;
         color: #ffffff !important;
     }
 
-    .stButton > button:hover,
-    .stButton > button:hover p,
-    .stButton > button:hover span {
+    .stButton > button:hover, .stButton > button:hover p, .stButton > button:hover span {
         background: #9d4edd !important;
         color: #ffffff !important;
         box-shadow: 4px 4px 0px #ff007f !important;
         cursor: pointer;
     }
-    .stButton > button:active {
-        transform: translate(2px, 2px);
-        box-shadow: 2px 2px 0px #ff007f !important;
-    }
 
-    /* KARTU HASIL DETEKSI */
     .cyber-card-danger {
         background-color: #2a081a;
         border: 2px solid #ff007f;
@@ -187,7 +159,7 @@ st.markdown(
 )
 
 # ==========================================
-# 2. Whitelist Domain Resmi
+# 2. Whitelist Domain & Normalisasi Teks
 # ==========================================
 DOMAIN_RESMI = [
     'tsel.me',
@@ -209,25 +181,57 @@ DOMAIN_RESMI = [
     'tokopedia.com',
     'shopee.co.id',
     'bukalapak.com',
+    'wingstop.co.id',
 ]
 
 
-def bersihkan_teks(teks):
-  teks = str(teks).lower()
-  teks = re.sub(r'\b\S+\.apk\b', ' fileapk ', teks)
+def normalisasi_leetspeak(teks):
+  # Translasi angka kamuflase menjadi huruf (leetspeak -> kata baku)
+  leet_map = {
+      '0': 'o',
+      '1': 'i',
+      '3': 'e',
+      '4': 'a',
+      '5': 's',
+      '7': 't',
+      '8': 'b',
+  }
+  kata_kata = teks.split()
+  hasil = []
 
-  urls = re.findall(
-      r'https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*', teks
-  )
-  for url in urls:
-    is_resmi = any(domain in url for domain in DOMAIN_RESMI)
-    if is_resmi:
-      teks = teks.replace(url, ' linkresmi ')
+  for kata in kata_kata:
+    # Jika kata mengandung percampuran angka & huruf (contoh: s1tus, jud1, g4cor)
+    if any(c.isdigit() for c in kata) and any(c.isalpha() for c in kata):
+      kata_baru = ''.join(leet_map.get(c, c) for c in kata)
+      hasil.append(kata_baru)
     else:
-      teks = teks.replace(url, ' linkmencurigakan ')
+      hasil.append(kata)
 
-  teks = re.sub(r'[^a-zA-Z\s]', ' ', teks)
-  return re.sub(r'\s+', ' ', teks).strip()
+  return ' '.join(hasil)
+
+
+def bersihkan_teks(teks):
+  teks_awal = str(teks).lower()
+
+  # Deteksi file berbahaya (.apk)
+  ada_apk = bool(re.search(r'\b\S+\.apk\b', teks_awal))
+
+  # Extract URL & Whitelist Check
+  urls = re.findall(
+      r'https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*', teks_awal
+  )
+  ada_link_resmi = any(
+      any(domain in url for domain in DOMAIN_RESMI) for url in urls
+  )
+
+  # Normalisasi Leetspeak (angka kamuflase)
+  teks_norm = normalisasi_leetspeak(teks_awal)
+
+  # Preprocessing teks untuk Machine Learning
+  teks_bersih = re.sub(r'[^a-zA-Z\s]', ' ', teks_norm)
+  teks_bersih = re.sub(r'\s+', ' ', teks_bersih).strip()
+
+  return teks_bersih, ada_apk, ada_link_resmi
 
 
 # ==========================================
@@ -267,39 +271,49 @@ if st.button('MULAI PEMINDAIAN'):
   if not pesan_input.strip():
     st.warning('⚠️ INPUT EMPTY! Masukkan pesan terlebih dahulu.')
   else:
-    pesan_bersih = bersihkan_teks(pesan_input)
+    pesan_bersih, punya_apk, punya_link_resmi = bersihkan_teks(pesan_input)
 
-    punya_apk = 'fileapk' in pesan_bersih
-    punya_link_resmi = 'linkresmi' in pesan_bersih
-    punya_link_mencurigakan = 'linkmencurigakan' in pesan_bersih
-
+    # Layer 1: Rule-Based Khusus APK & Whitelist Domain Utama
     if punya_apk:
       prediksi = 'penipuan'
       prob_penipuan = 99.99
       prob_aman = 0.01
-    elif punya_link_resmi and not punya_link_mencurigakan:
+      alasan_rule = 'Terdeteksi lampiran file berbahaya (.apk)'
+    elif punya_link_resmi:
       prediksi = 'aman'
       prob_aman = 99.85
       prob_penipuan = 0.15
+      alasan_rule = 'Terdeteksi tautan domain resmi terverifikasi'
+    # Layer 2: Machine Learning Model (Untuk Semua Teks Biasa & Link Umum)
     else:
+      alasan_rule = 'Klasifikasi Murni Machine Learning (Naive Bayes)'
       X_input = vectorizer.transform([pesan_bersih])
-      prediksi = model.predict(X_input)[0]
       probabilitas = model.predict_proba(X_input)[0]
-      kelas_model = list(model.classes_)
 
-      idx_aman = kelas_model.index('aman') if 'aman' in kelas_model else 0
-      idx_penipuan = (
-          kelas_model.index('penipuan') if 'penipuan' in kelas_model else 1
-      )
+      kelas_model = [str(c).lower() for c in list(model.classes_)]
+
+      idx_aman = 0
+      idx_penipuan = 1
+
+      for i, c in enumerate(kelas_model):
+        if c in ['aman', 'ham', 'normal', '0', '0.0']:
+          idx_aman = i
+        elif c in ['penipuan', 'spam', '1', '1.0', 'phishing']:
+          idx_penipuan = i
 
       prob_aman = probabilitas[idx_aman] * 100
       prob_penipuan = probabilitas[idx_penipuan] * 100
+
+      if prob_penipuan > prob_aman:
+        prediksi = 'penipuan'
+      else:
+        prediksi = 'aman'
 
     skor_keyakinan = prob_penipuan if prediksi == 'penipuan' else prob_aman
 
     st.markdown('<hr>', unsafe_allow_html=True)
 
-    # GRAFIK PROGRESS BAR RETRO 8-BIT
+    # GRAFIK PROGRESS BAR
     html_chart = f"""
         <div style="background-color: #0a0512; border: 2px solid #a855f7; padding: 15px; margin-top: 15px; font-family: 'Silkscreen', cursive;">
             <div style="color: #ff007f; font-weight: bold; margin-bottom: 15px; font-size: 0.85rem;">>>> SKOR PROBABILITAS:</div>
@@ -353,3 +367,8 @@ if st.button('MULAI PEMINDAIAN'):
             """
 
     render_html(html_card)
+
+    # DEBUG DIAGNOSTICS
+    with st.expander('🔍 SYSTEM DIAGNOSTICS'):
+      st.write('**Teks Hasil Normalisasi (ML Input):**', pesan_bersih)
+      st.write('**Status Layer Deteksi:**', alasan_rule)
