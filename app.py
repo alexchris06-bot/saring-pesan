@@ -159,7 +159,7 @@ st.markdown(
 )
 
 # ==========================================
-# 2. Whitelist Domain & Normalisasi Teks
+# 2. Whitelist Domain & Filter Indikator Spam
 # ==========================================
 DOMAIN_RESMI = [
     'tsel.me',
@@ -184,9 +184,25 @@ DOMAIN_RESMI = [
     'wingstop.co.id',
 ]
 
+KATA_KUNCI_SPAM = [
+    'gacor',
+    'depo',
+    'wd',
+    'wede',
+    'w3de',
+    'jepe',
+    'maxwin',
+    'slot',
+    'judol',
+    'judi',
+    'zeus',
+    'pragmatic',
+    'jp',
+    'situsslot',
+]
+
 
 def normalisasi_leetspeak(teks):
-  # Translasi angka kamuflase menjadi huruf (leetspeak -> kata baku)
   leet_map = {
       '0': 'o',
       '1': 'i',
@@ -200,7 +216,6 @@ def normalisasi_leetspeak(teks):
   hasil = []
 
   for kata in kata_kata:
-    # Jika kata mengandung percampuran angka & huruf (contoh: s1tus, jud1, g4cor)
     if any(c.isdigit() for c in kata) and any(c.isalpha() for c in kata):
       kata_baru = ''.join(leet_map.get(c, c) for c in kata)
       hasil.append(kata_baru)
@@ -213,25 +228,33 @@ def normalisasi_leetspeak(teks):
 def bersihkan_teks(teks):
   teks_awal = str(teks).lower()
 
-  # Deteksi file berbahaya (.apk)
-  ada_apk = bool(re.search(r'\b\S+\.apk\b', teks_awal))
+  # 1. Hapus tanda petik pemecah kata (misal g'acor -> gacor, w3'de -> w3de)
+  teks_tanpa_petik = re.sub(r"['`\"\-]", '', teks_awal)
 
-  # Extract URL & Whitelist Check
+  # 2. Deteksi file APK & URL
+  ada_apk = bool(re.search(r'\b\S+\.apk\b', teks_tanpa_petik))
   urls = re.findall(
-      r'https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*', teks_awal
+      r'https?://\S+|www\.\S+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/[^\s]*',
+      teks_tanpa_petik,
   )
   ada_link_resmi = any(
       any(domain in url for domain in DOMAIN_RESMI) for url in urls
   )
 
-  # Normalisasi Leetspeak (angka kamuflase)
-  teks_norm = normalisasi_leetspeak(teks_awal)
+  # 3. Normalisasi Leetspeak
+  teks_norm = normalisasi_leetspeak(teks_tanpa_petik)
 
-  # Preprocessing teks untuk Machine Learning
+  # 4. Pembersihan karakter khusus
   teks_bersih = re.sub(r'[^a-zA-Z\s]', ' ', teks_norm)
   teks_bersih = re.sub(r'\s+', ' ', teks_bersih).strip()
 
-  return teks_bersih, ada_apk, ada_link_resmi
+  # 5. Cek kata kunci spam/judi
+  kata_list = teks_bersih.split()
+  ada_kata_spam = any(
+      kw in kata_list or kw in teks_bersih for kw in KATA_KUNCI_SPAM
+  )
+
+  return teks_bersih, ada_apk, ada_link_resmi, ada_kata_spam
 
 
 # ==========================================
@@ -271,20 +294,26 @@ if st.button('MULAI PEMINDAIAN'):
   if not pesan_input.strip():
     st.warning('⚠️ INPUT EMPTY! Masukkan pesan terlebih dahulu.')
   else:
-    pesan_bersih, punya_apk, punya_link_resmi = bersihkan_teks(pesan_input)
+    pesan_bersih, punya_apk, punya_link_resmi, punya_kata_spam = bersihkan_teks(
+        pesan_input
+    )
 
-    # Layer 1: Rule-Based Khusus APK & Whitelist Domain Utama
-    if punya_apk:
+    # Layer 1: Rule-Based (APK, Kata Kunci Judi/Spam, & Domain Resmi)
+    if punya_apk or punya_kata_spam:
       prediksi = 'penipuan'
       prob_penipuan = 99.99
       prob_aman = 0.01
-      alasan_rule = 'Terdeteksi lampiran file berbahaya (.apk)'
+      alasan_rule = (
+          'Terdeteksi file APK berbahaya'
+          if punya_apk
+          else 'Terdeteksi pola kata kunci indikasi judi/spam'
+      )
     elif punya_link_resmi:
       prediksi = 'aman'
       prob_aman = 99.85
       prob_penipuan = 0.15
       alasan_rule = 'Terdeteksi tautan domain resmi terverifikasi'
-    # Layer 2: Machine Learning Model (Untuk Semua Teks Biasa & Link Umum)
+    # Layer 2: Machine Learning Model
     else:
       alasan_rule = 'Klasifikasi Murni Machine Learning (Naive Bayes)'
       X_input = vectorizer.transform([pesan_bersih])
